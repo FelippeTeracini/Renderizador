@@ -7,6 +7,7 @@ import x3d          # Faz a leitura do arquivo X3D, gera o grafo de cena e faz t
 import interface    # Janela de visualização baseada no Matplotlib
 import gpu          # Simula os recursos de uma GPU
 import math
+import numpy as np
 
 
 def polypoint2D(point, color):
@@ -98,8 +99,8 @@ def triangleSet2D(vertices, color):
 
     i = 0.25
     j = 0.25
-    while i < 30:
-        while j < 20:
+    while i < LARGURA:
+        while j < ALTURA:
             count = 0
             # calcula o vetor do ponto
             V0 = [i - u1[0], j - u1[1]]
@@ -174,25 +175,147 @@ def triangleSet2D(vertices, color):
             j += 1
         i += 1
         j = 0.5
-
+  
 
 def triangleSet(point, color):
     """ Função usada para renderizar TriangleSet. """
-    print("TriangleSet : pontos = {0}".format(point)) # imprime no terminal pontos
+    global transform_Matrix
+    global projection_Matrix
+    global lookat
+
+    # print("TriangleSet : pontos = {0}".format(point)) # imprime no terminal pontos 
+    points_Matrix = np.reshape(point, (int(len(point)/3), 3)).transpose()
+    # print(points_Matrix)
+    points_Matrix = np.append(points_Matrix, np.ones((1, int(len(point)/3))), axis=0)
+
+    points_Matrix = transform_Matrix.dot(points_Matrix)
+
+    # print(transform_Matrix)
+    # print(points_Matrix)
+    # print(lookat)
+    points_Matrix = lookat.dot(points_Matrix)
+
+    # print(points_Matrix)
+
+    projection = projection_Matrix.dot(points_Matrix)
+
+    projection = np.divide(projection, projection[-1, -1])
+
+    # print(points_Matrix)
+    # print(projection_Matrix)
+    # print(projection)
+
+    screenCoords = np.zeros((4, 4))
+    screenCoords[0, 0] = LARGURA/2
+    screenCoords[1, 1] = -ALTURA/2
+    screenCoords[0, 3] = LARGURA/2
+    screenCoords[1, 3] = ALTURA/2
+
+    final_projection = screenCoords.dot(projection)
+
+    print(final_projection[:2])
+
+    final_points = final_projection[:2].transpose().reshape(int(len(point)*2/3))
+    # print(final_points)
+    # print(color)
+
+    for i in range(0, len(final_points), 6):
+        triangleSet2D(final_points[i:i+6], color)
+
+    transform_Matrix = np.identity(4)
 
 def viewpoint(position, orientation, fieldOfView):
     """ Função usada para renderizar (na verdade coletar os dados) de Viewpoint. """
-    print("Viewpoint : position = {0}, orientation = {0}, fieldOfView = {0}".format(position, orientation, fieldOfView)) # imprime no terminal
+    print("Viewpoint : position = {0}, orientation = {1}, fieldOfView = {2}".format(position, orientation, fieldOfView)) # imprime no terminal
+    global projection_Matrix
+    global lookat
+
+    aspect = LARGURA/ALTURA
+
+    near = 0.5
+    far = 100
+    top = near * math.tan(fieldOfView)
+    bottom = -top
+    right = top * aspect
+    left = -right
+
+    projection_Matrix = np.zeros((4, 4))
+    projection_Matrix[0, 0] = 2*near/(right-left)
+    projection_Matrix[1, 1] = 2*near/(top-bottom)
+    projection_Matrix[2, 2] = -(far+near)/(far-near)
+    projection_Matrix[2, 3] = -2*far*near/(far-near)
+    projection_Matrix[3, 2] = -1
+    projection_Matrix[0, 2] = (right+left)/(right-left)
+    projection_Matrix[1, 2] = (top+bottom)/(top-bottom)
+
+    lookat = np.identity(4)
+    if orientation[0] != 0:
+        lookat[1, 1] = math.cos(orientation[3])
+        lookat[2, 2] = math.cos(orientation[3])
+        lookat[2, 1] = math.sin(orientation[3])
+        lookat[1, 2] = -math.sin(orientation[3])
+    if orientation[1] != 0:
+        lookat[0, 0] = math.cos(orientation[3])
+        lookat[2, 2] = math.cos(orientation[3])
+        lookat[0, 2] = math.sin(orientation[3])
+        lookat[2, 0] = -math.sin(orientation[3])
+    if orientation[2] != 0:
+        lookat[0, 0] = math.cos(orientation[3])
+        lookat[1, 1] = math.cos(orientation[3])
+        lookat[1, 0] = math.sin(orientation[3])
+        lookat[0, 1] = -math.sin(orientation[3])
+
+    lookat2 = np.identity(4)
+    lookat2[0, 3] = -position[0]
+    lookat2[1, 3] = -position[1]
+    lookat2[2, 3] = -position[2]
+
+    lookat = lookat.dot(lookat2)
+
+    # projection_Matrix = projection_Matrix.dot(lookat2)
+
+    
 
 def transform(translation, scale, rotation):
     """ Função usada para renderizar (na verdade coletar os dados) de Transform. """
+    global transform_Matrix
     print("Transform : ", end = '')
     if translation:
         print("translation = {0} ".format(translation), end = '') # imprime no terminal
+        translation_Matrix = np.identity(4)
+        translation_Matrix[0, 3] = translation[0]
+        translation_Matrix[1, 3] = translation[1]
+        translation_Matrix[2, 3] = translation[2]
+        # print(translation_Matrix)
+        transform_Matrix = translation_Matrix.dot(transform_Matrix)
     if scale:
         print("scale = {0} ".format(scale), end = '') # imprime no terminal
+        scale_Matrix = np.identity(4)
+        scale_Matrix[0, 0] = scale[0]
+        scale_Matrix[1, 1] = scale[1]
+        scale_Matrix[2, 2] = scale[2]
+        # print(scale_Matrix)
+        transform_Matrix = scale_Matrix.dot(transform_Matrix)
     if rotation:
         print("rotation = {0} ".format(rotation), end = '') # imprime no terminal
+        rotation_Matrix = np.identity(4)
+        if rotation[0]:
+            rotation_Matrix[1, 1] = math.cos(rotation[3])
+            rotation_Matrix[2, 2] = math.cos(rotation[3])
+            rotation_Matrix[2, 1] = math.sin(rotation[3])
+            rotation_Matrix[1, 2] = -math.sin(rotation[3])
+        if rotation[1]:
+            rotation_Matrix[0, 0] = math.cos(rotation[3])
+            rotation_Matrix[2, 2] = math.cos(rotation[3])
+            rotation_Matrix[0, 2] = math.sin(rotation[3])
+            rotation_Matrix[2, 0] = -math.sin(rotation[3])
+        if rotation[2]:
+            rotation_Matrix[0, 0] = math.cos(rotation[3])
+            rotation_Matrix[1, 1] = math.cos(rotation[3])
+            rotation_Matrix[1, 0] = math.sin(rotation[3])
+            rotation_Matrix[0, 1] = -math.sin(rotation[3])
+        # print(rotation_Matrix)
+        transform_Matrix = rotation_Matrix.dot(transform_Matrix)
     print("")
 
 def triangleStripSet(point, stripCount, color):
@@ -211,8 +334,8 @@ def box(size, color):
     print("Box : size = {0}".format(size)) # imprime no terminal pontos
 
 
-LARGURA = 30
-ALTURA = 20
+LARGURA = 80
+ALTURA = 40
 
 if __name__ == '__main__':
 
@@ -221,6 +344,10 @@ if __name__ == '__main__':
     height = ALTURA
     x3d_file = "exemplo4.x3d"
     image_file = "tela.png"
+
+    transform_Matrix = np.identity(4)
+    projection_Matrix = np.identity(4)
+    lookat = np.identity(4)
 
     # Tratando entrada de parâmetro
     # parser para linha de comando
