@@ -179,40 +179,6 @@ def triangleSet2D(vertices, color):
 
 def triangleSet(point, color):
     """ Função usada para renderizar TriangleSet. """
-<<<<<<< HEAD
-    # Nessa função você receberá pontos no parâmetro point, esses pontos são uma lista
-    # de pontos x, y, e z sempre na ordem. Assim point[0] é o valor da coordenada x do
-    # primeiro ponto, point[1] o valor y do primeiro ponto, point[2] o valor z da 
-    # coordenada z do primeiro ponto. Já point[3] é a coordenada x do segundo ponto e
-    # assim por diante.
-    # No TriangleSet os triângulos são informados individualmente, assim os três
-    # primeiros pontos definem um triângulo, os três próximos pontos definem um novo
-    # triângulo, e assim por diante.
-    
-    # O print abaixo é só para vocês verificarem o funcionamento, deve ser removido.
-    print("TriangleSet : pontos = {0}".format(point)) # imprime no terminal pontos
-
-def viewpoint(position, orientation, fieldOfView):
-    """ Função usada para renderizar (na verdade coletar os dados) de Viewpoint. """
-    # Na função de viewpoint você receberá a posição, orientação e campo de visão da
-    # câmera virtual. Use esses dados para poder calcular e criar a matriz de projeção
-    # perspectiva para poder aplicar nos pontos dos objetos geométricos.
-
-    # O print abaixo é só para vocês verificarem o funcionamento, deve ser removido.
-    print("Viewpoint : position = {0}, orientation = {1}, fieldOfView = {2}".format(position, orientation, fieldOfView)) # imprime no terminal
-
-def transform(translation, scale, rotation):
-    """ Função usada para renderizar (na verdade coletar os dados) de Transform. """
-    # A função transform será chamada quando se entrar em um nó X3D do tipo Transform
-    # do grafo de cena. Os valores passados são a escala em um vetor [x, y, z]
-    # indicando a escala em cada direção, a translação [x, y, z] nas respectivas
-    # coordenadas e finalmente a rotação por [x, y, z, t] sendo definida pela rotação
-    # do objeto ao redor do eixo x, y, z por t radianos, seguindo a regra da mão direita.
-    # Quando se entrar em um nó transform se deverá salvar a matriz de transformação dos
-    # modelos do mundo em alguma estrutura de pilha.
-
-    # O print abaixo é só para vocês verificarem o funcionamento, deve ser removido.
-=======
     global transform_Matrix
     global projection_Matrix
     global lookat
