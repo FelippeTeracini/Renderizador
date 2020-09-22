@@ -79,7 +79,7 @@ def polyline2D(lineSegments, color):
 
 def triangleSet2D(vertices, color):
     """ Função usada para renderizar TriangleSet2D. """
-    print(vertices)
+    # print(vertices)
     # Pega as coordenadas do inicio e fim da linha
     u1 = [vertices[0], vertices[1]]
     u2 = [vertices[2], vertices[3]]
@@ -179,30 +179,40 @@ def triangleSet2D(vertices, color):
 
 def triangleSet(point, color):
     """ Função usada para renderizar TriangleSet. """
-    global transform_Matrix
+    # global transform_Matrix
+    global transform_Stack
     global projection_Matrix
     global lookat
 
     # print("TriangleSet : pontos = {0}".format(point)) # imprime no terminal pontos 
     points_Matrix = np.reshape(point, (int(len(point)/3), 3)).transpose()
-    # print(points_Matrix)
     points_Matrix = np.append(points_Matrix, np.ones((1, int(len(point)/3))), axis=0)
 
-    points_Matrix = transform_Matrix.dot(points_Matrix)
+    # print(transform_Stack[-1])
+    # print("Na STACK:\n" + str(transform_Stack[-1]))
+    # print(points_Matrix)
+
+    # points_Matrix = transform_Matrix.dot(points_Matrix) ###############
+    points_Matrix = transform_Stack[-1].dot(points_Matrix)
 
     # print(transform_Matrix)
     # print(points_Matrix)
     # print(lookat)
-    points_Matrix = lookat.dot(points_Matrix)
+    points_Matrix = lookat.dot(points_Matrix) ##################
 
     # print(points_Matrix)
 
-    projection = projection_Matrix.dot(points_Matrix)
+    projection = projection_Matrix.dot(points_Matrix) ###################
 
-    projection = np.divide(projection, projection[-1, -1])
-
-    # print(points_Matrix)
+    # print(projection)
     # print(projection_Matrix)
+
+    # projection = np.divide(projection, projection[-1, -1]) #################
+    for i in range(len(projection[0])):
+        projection[:,i] /= projection[-1,i]
+
+    # projection = np.divide(points_Matrix, points_Matrix[-1, -1]) 
+
     # print(projection)
 
     screenCoords = np.zeros((4, 4))
@@ -213,7 +223,7 @@ def triangleSet(point, color):
 
     final_projection = screenCoords.dot(projection)
 
-    print(final_projection[:2])
+    # print(final_projection[:2])
 
     final_points = final_projection[:2].transpose().reshape(int(len(point)*2/3))
     # print(final_points)
@@ -222,13 +232,14 @@ def triangleSet(point, color):
     for i in range(0, len(final_points), 6):
         triangleSet2D(final_points[i:i+6], color)
 
-    transform_Matrix = np.identity(4)
+    # transform_Matrix = np.identity(4)
 
 def viewpoint(position, orientation, fieldOfView):
     """ Função usada para renderizar (na verdade coletar os dados) de Viewpoint. """
     print("Viewpoint : position = {0}, orientation = {1}, fieldOfView = {2}".format(position, orientation, fieldOfView)) # imprime no terminal
     global projection_Matrix
     global lookat
+    global transform_Stack
 
     aspect = LARGURA/ALTURA
 
@@ -274,12 +285,19 @@ def viewpoint(position, orientation, fieldOfView):
 
     # projection_Matrix = projection_Matrix.dot(lookat2)
 
+    # transform_Stack.append(projection_Matrix.dot(lookat.dot(transform_Stack[-1])))
+
+
     
 
 def transform(translation, scale, rotation):
     """ Função usada para renderizar (na verdade coletar os dados) de Transform. """
-    global transform_Matrix
->>>>>>> 3d
+    # global transform_Matrix
+    global transform_Stack
+
+    if transform_Stack:
+        transform_Matrix = transform_Stack[-1]
+    
     print("Transform : ", end = '')
     if translation:
         print("translation = {0} ".format(translation), end = '') # imprime no terminal
@@ -317,6 +335,11 @@ def transform(translation, scale, rotation):
             rotation_Matrix[0, 1] = -math.sin(rotation[3])
         # print(rotation_Matrix)
         transform_Matrix = rotation_Matrix.dot(transform_Matrix)
+
+    transform_Stack.append(transform_Matrix)
+
+    # print("\nNa STACK:\n" + str(transform_Stack[-1]))
+
     print("")
 
 def _transform():
@@ -328,6 +351,8 @@ def _transform():
 
     # O print abaixo é só para vocês verificarem o funcionamento, deve ser removido.
     print("Saindo de Transform")
+    transform_Stack.pop()
+    # print("\nNa STACK:\n" + str(transform_Stack[-1]))
 
 def triangleStripSet(point, stripCount, color):
     """ Função usada para renderizar TriangleStripSet. """
@@ -340,10 +365,19 @@ def triangleStripSet(point, stripCount, color):
     # em uma lista chamada stripCount (perceba que é uma lista).
 
     # O print abaixo é só para vocês verificarem o funcionamento, deve ser removido.
-    print("TriangleStripSet : pontos = {0} ".format(point), end = '') # imprime no terminal pontos
-    for i, strip in enumerate(stripCount):
-        print("strip[{0}] = {1} ".format(i, strip), end = '') # imprime no terminal
-    print("")
+    # print("TriangleStripSet : pontos = {0} ".format(point), end = '') # imprime no terminal pontos
+    # for i, strip in enumerate(stripCount):
+    #     print("strip[{0}] = {1} ".format(i, strip), end = '') # imprime no terminal
+    # print("")
+
+    for i in range(int(stripCount[0])-2):
+        c = i*3
+        if i%2 == 0:
+            points = point[c:c+3] + point[c+3:c+6] + point[c+6:c+9]
+        else:
+            points = point[c+3:c+6] + point[c:c+3] + point[c+6:c+9]
+        triangleSet(points, color)
+
 
 def indexedTriangleStripSet(point, index, color):
     """ Função usada para renderizar IndexedTriangleStripSet. """
@@ -359,7 +393,20 @@ def indexedTriangleStripSet(point, index, color):
     # depois 2, 3 e 4, e assim por diante.
     
     # O print abaixo é só para vocês verificarem o funcionamento, deve ser removido.
-    print("IndexedTriangleStripSet : pontos = {0}, index = {1}".format(point, index)) # imprime no terminal pontos
+    # print("IndexedTriangleStripSet : pontos = {0}, index = {1}".format(point, index)) # imprime no terminal pontos
+
+    for i in range(len(index)-3):
+        a = int(index[i]*3)
+        b = int(index[i+1]*3)
+        c = int(index[i+2]*3)
+        if index[i] == -1:
+            break
+        else:
+            if i%2 == 0:
+                points = point[a:a+3] + point[b:b+3] + point[c:c+3]
+            else:
+                points = point[b:b+3] + point[a:a+3] + point[c:c+3]
+            triangleSet(points, color)
 
 def box(size, color):
     """ Função usada para renderizar Boxes. """
@@ -374,8 +421,8 @@ def box(size, color):
     print("Box : size = {0}".format(size)) # imprime no terminal pontos
 
 
-LARGURA = 80
-ALTURA = 40
+LARGURA = 80*4
+ALTURA = 40*4
 
 if __name__ == '__main__':
 
@@ -385,9 +432,11 @@ if __name__ == '__main__':
     x3d_file = "exemplo4.x3d"
     image_file = "tela.png"
 
-    transform_Matrix = np.identity(4)
+    # transform_Matrix = np.identity(4)
     projection_Matrix = np.identity(4)
     lookat = np.identity(4)
+
+    transform_Stack = [np.identity(4)]
 
     # Tratando entrada de parâmetro
     # parser para linha de comando
