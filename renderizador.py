@@ -418,11 +418,31 @@ def box(size, color):
     # encontre os vértices e defina os triângulos.
 
     # O print abaixo é só para vocês verificarem o funcionamento, deve ser removido.
-    print("Box : size = {0}".format(size)) # imprime no terminal pontos
+    # print("Box : size = {0}".format(size)) # imprime no terminal pontos
+
+    x, y, z = [size[0]/2, size[1]/2, size[2]/2]
+
+    v1 = [-x, -y, -z]
+    v2 = [-x, -y, z]
+    v3 = [-x, y, -z]
+    v4 = [-x, y, z]
+    v5 = [x, y, -z]
+    v6 = [x, y, z]
+    v7 = [x, -y, -z]
+    v8 = [x, -y, z]
+
+    sides = v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v1 + v2
+    triangleStripSet(sides, [8], color)
+
+    sides = v1 + v3 + v7 + v5
+    triangleStripSet(sides, [4], color)
+    sides = v2 + v8 + v4 + v6
+    triangleStripSet(sides, [4], color)
 
 
-LARGURA = 80*4
-ALTURA = 40*4
+
+LARGURA = 80*2
+ALTURA = 40*2
 
 if __name__ == '__main__':
 
