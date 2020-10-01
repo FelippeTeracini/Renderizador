@@ -177,7 +177,55 @@ def triangleSet2D(vertices, color):
         j = 0.5
 
 
-def triangleSet(point, color):
+def triangleSet2DColor(vertices, color):
+    """ Função usada para renderizar TriangleSet2D. """
+    # print(vertices)
+    # Pega as coordenadas do inicio e fim da linha
+    u1 = [vertices[0], vertices[1]]
+    u2 = [vertices[2], vertices[3]]
+    u3 = [vertices[4], vertices[5]]
+    # transforma as cores de x3d (0,1) para o framebuffer (0,255)
+    r = int(255*color[0])
+    g = int(255*color[1])
+    b = int(255*color[2])
+    # calcula o vetor transversal
+    T1 = [u1[0] - u2[0], u1[1] - u2[1]]
+    T2 = [u2[0] - u3[0], u2[1] - u3[1]]
+    T3 = [u3[0] - u1[0], u3[1] - u1[1]]
+    # calcula o vetor perpendicular (normal)
+    N1 = [T1[1], -T1[0]]
+    N2 = [T2[1], -T2[0]]
+    N3 = [T3[1], -T3[0]]
+
+    i = 0
+    j = 0
+    while i < LARGURA:
+        while j < ALTURA:
+            # calcula o vetor do ponto
+            V0 = [i - u1[0], j - u1[1]]
+            # calcula o produto escalar
+            Pe0 = V0[0]*N1[0] + V0[1]*N1[1]
+
+            if Pe0 < 0:
+                # calcula o vetor do ponto
+                V0 = [i - u2[0], j - u2[1]]
+                # calcula o produto escalar
+                Pe0 = V0[0]*N2[0] + V0[1]*N2[1]
+
+                if Pe0 < 0:
+                    # calcula o vetor do ponto
+                    V0 = [i - u3[0], j - u3[1]]
+                    # calcula o produto escalar
+                    Pe0 = V0[0]*N3[0] + V0[1]*N3[1]
+                    if Pe0 < 0:
+                        gpu.GPU.set_pixel(math.floor(i), math.floor(j), r, g,
+                                          b)  # altera um pixel da imagem
+            j += 1
+        i += 1
+        j = 0
+
+
+def triangleSet(point, color, flagColor):
     """ Função usada para renderizar TriangleSet. """
     # global transform_Matrix
     global transform_Stack
@@ -232,7 +280,10 @@ def triangleSet(point, color):
     # print(color)
 
     for i in range(0, len(final_points), 6):
-        triangleSet2D(final_points[i:i+6], color)
+        if flagColor:
+            triangleSet2DColor(final_points[i:i+6], color)
+        else:
+            triangleSet2D(final_points[i:i+6], color)
 
     # transform_Matrix = np.identity(4)
 
@@ -382,7 +433,7 @@ def triangleStripSet(point, stripCount, color):
             points = point[c:c+3] + point[c+3:c+6] + point[c+6:c+9]
         else:
             points = point[c+3:c+6] + point[c:c+3] + point[c+6:c+9]
-        triangleSet(points, color)
+        triangleSet(points, color, False)
 
 
 def indexedTriangleStripSet(point, index, color):
@@ -412,7 +463,7 @@ def indexedTriangleStripSet(point, index, color):
                 points = point[a:a+3] + point[b:b+3] + point[c:c+3]
             else:
                 points = point[b:b+3] + point[a:a+3] + point[c:c+3]
-            triangleSet(points, color)
+            triangleSet(points, color, False)
 
 
 def box(size, color):
@@ -470,9 +521,19 @@ def indexedFaceSet(coord, coordIndex, colorPerVertex, color, colorIndex, texCoor
 
     # O print abaixo é só para vocês verificarem o funcionamento, deve ser removido.
     print("IndexedFaceSet : ")
+    points_list = []
     if coord:
-        print("\tpontos(x, y, z) = {0}, coordIndex = {1}".format(
-            coord, coordIndex))  # imprime no terminal
+        for i in range(0, len(coordIndex), 4):
+            a = coordIndex[i]
+            b = coordIndex[i+1]
+            c = coordIndex[i+2]
+            point0 = [coord[a*3], coord[(a*3)+1], coord[(a*3)+2]]
+            point1 = [coord[b*3], coord[(b*3)+1], coord[(b*3)+2]]
+            point2 = [coord[c*3], coord[(c*3)+1], coord[(c*3)+2]]
+            points = point0 + point1 + point2
+            points_list.append(points)
+        # print("\tpontos(x, y, z) = {0}, coordIndex = {1}".format(
+        #     coord, coordIndex))  # imprime no terminal
     if colorPerVertex:
         print("\tcores(r, g, b) = {0}, colorIndex = {1}".format(
             color, colorIndex))  # imprime no terminal
@@ -483,10 +544,13 @@ def indexedFaceSet(coord, coordIndex, colorPerVertex, color, colorIndex, texCoor
         image = gpu.GPU.load_texture(current_texture[0])
         print("\t Matriz com image = {0}".format(image))
 
+    for points in points_list:
+        triangleSet(points, current_color, True)
+
 
 # Defina o tamanhã da tela que melhor sirva para perceber a renderização
-LARGURA = 300
-ALTURA = 200
+LARGURA = 200
+ALTURA = 100
 
 if __name__ == '__main__':
 
