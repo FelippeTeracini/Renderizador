@@ -485,8 +485,8 @@ def indexedFaceSet(coord, coordIndex, colorPerVertex, color, colorIndex, texCoor
 
 
 # Defina o tamanhã da tela que melhor sirva para perceber a renderização
-LARGURA = 30
-ALTURA = 20
+LARGURA = 300
+ALTURA = 200
 
 if __name__ == '__main__':
 
